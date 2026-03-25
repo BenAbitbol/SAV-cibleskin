@@ -68,6 +68,11 @@ def index():
     return render_template("dashboard.html", stats=stats, recent=recent, page="dashboard")
 
 
+@app.route("/brief")
+def brief():
+    return render_template("brief.html", page="brief")
+
+
 @app.route("/assistant")
 def assistant():
     templates = get_templates()

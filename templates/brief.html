@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Brief operationnel{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Brief operationnel</h1>
+        <p>Bible SAV & Community — Formation des nouveaux membres</p>
+    </div>
+</div>
+
+<!-- Section 1: SAV Emails -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: #E8D5C4; display: flex; align-items: center; justify-content: center;">✉️</span>
+        <div>
+            <h3 style="font-size: 1.1rem;">01 — SAV Emails</h3>
+            <small style="color: var(--text-secondary);">hello@cibleparis.com</small>
+        </div>
+    </div>
+    <div style="padding-left: 0.5rem;">
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+            <span style="width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 2px;"></span>
+            <div>
+                <p>Gerer la boite mail SAV au quotidien</p>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                    <span class="badge" style="background: var(--bg);">Nettoyer</span>
+                    <span class="badge" style="background: var(--bg);">Repondre</span>
+                    <span class="badge" style="background: var(--bg);">Archiver</span>
+                    <span class="badge badge-sent" style="font-weight: 600;">🎯 Inbox 0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="background: #FFF8F0; border-left: 3px solid #C8A97E; padding: 0.85rem 1rem; margin-top: 1rem; border-radius: 0 6px 6px 0; font-size: 0.9rem; color: #7A5C3A;">
+        💬 <strong>Periode de prise en main</strong> — Pour les premieres reponses, partager un apercu sur Slack avant envoi pour validation.
+    </div>
+</div>
+
+<!-- Section 2: Process par type de demande -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: #F0E6D6; display: flex; align-items: center; justify-content: center;">⚡</span>
+        <div>
+            <h3 style="font-size: 1.1rem;">02 — Process par type de demande</h3>
+            <small style="color: var(--text-secondary);">Regles a appliquer</small>
+        </div>
+    </div>
+
+    <div id="processGrid">
+        <div class="process-step" style="display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+            <span style="font-size: 1.5rem; color: var(--border); font-weight: 700; width: 30px;">1</span>
+            <div style="flex: 1;">
+                <strong>Ou en est ma commande ?</strong>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Verifier le lien de suivi et repondre directement au client avec les informations de tracking.</p>
+                <span class="badge badge-sent" style="margin-top: 0.5rem;">✔ Traite en autonomie</span>
+            </div>
+        </div>
+        <div class="process-step" style="display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+            <span style="font-size: 1.5rem; color: var(--border); font-weight: 700; width: 30px;">2</span>
+            <div style="flex: 1;">
+                <strong>Demande de facture</strong>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Envoyer un message Slack a <strong>Adrien</strong> avec le numero de commande → il genere et envoie la facture.</p>
+                <span class="badge" style="background: #E8E0F0; color: #6B5EA8; margin-top: 0.5rem;">⚡ Via Slack → Adrien</span>
+            </div>
+        </div>
+        <div class="process-step" style="display: flex; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border);">
+            <span style="font-size: 1.5rem; color: var(--border); font-weight: 700; width: 30px;">3</span>
+            <div style="flex: 1;">
+                <strong>Autres cas</strong>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">Les process complementaires sont construits au fur et a mesure. Ce document est mis a jour en consequence.</p>
+                <span class="badge" style="background: var(--bg); margin-top: 0.5rem;">🔄 Process evolutif</span>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-ghost" style="width: 100%; margin-top: 1rem; border-style: dashed;" onclick="openProcessModal()">+ Ajouter un type de demande</button>
+</div>
+
+<!-- Section 3: Instagram -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: #D4E0D4; display: flex; align-items: center; justify-content: center;">📱</span>
+        <div>
+            <h3 style="font-size: 1.1rem;">03 — Instagram</h3>
+            <small style="color: var(--text-secondary);">Community management</small>
+        </div>
+    </div>
+    <div style="padding-left: 0.5rem;">
+        {% for task in ["Repondre aux commentaires", "Bloquer les comptes si necessaire", "Partager les informations importantes sur Slack (signalements, opportunites, ventes potentielles)"] %}
+        <div style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.6rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+            <span style="width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 4px; flex-shrink: 0; margin-top: 2px;"></span>
+            <p style="font-size: 0.9rem;">{{ task }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Section 4: Points ouverts -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: #E2E0F0; display: flex; align-items: center; justify-content: center;">📌</span>
+        <div>
+            <h3 style="font-size: 1.1rem;">04 — Points a clarifier</h3>
+            <small style="color: var(--text-secondary);">A documenter une fois resolus</small>
+        </div>
+    </div>
+    {% for q in ["Qui est responsable des emails SAV ? Definir un referent unique.", "Qui gere le compte Instagram ? Si des ventes ou opportunites arrivent via Instagram, quel est le process de traitement ?"] %}
+    <div style="display: flex; gap: 0.75rem; padding: 0.75rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+        <span style="font-size: 1.2rem; color: #C8A97E; font-weight: 700;">?</span>
+        <p style="font-size: 0.9rem;">{{ q }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Section 5: Acces -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <span style="width: 36px; height: 36px; border-radius: 8px; background: #E0EDF0; display: flex; align-items: center; justify-content: center;">🔑</span>
+        <div>
+            <h3 style="font-size: 1.1rem;">05 — Acces necessaires</h3>
+            <small style="color: var(--text-secondary);">Demander les acces suivants</small>
+        </div>
+    </div>
+    {% for tool in ["🛍️ Shopify", "📸 Instagram", "✉️ hello@cibleparis.com"] %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; {% if not loop.last %}border-bottom: 1px solid var(--border);{% endif %}">
+        <span style="font-weight: 500;">{{ tool }}</span>
+        <span class="badge" style="background: var(--bg);">Demander acces</span>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Objectif -->
+<div style="background: var(--sidebar-bg); color: white; padding: 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+    <span style="font-size: 2rem;">🎯</span>
+    <div>
+        <small style="color: #C8A97E; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem;">Objectif principal</small>
+        <h2 style="font-size: 1.3rem; font-weight: 400; margin-top: 0.25rem;">Inbox 0 — toujours.</h2>
+    </div>
+</div>
+
+<!-- Modal ajout process -->
+<div class="modal-overlay" id="processModal">
+    <div class="modal">
+        <h2>Nouveau type de demande</h2>
+        <div class="form-group">
+            <label for="stepTitle">Titre</label>
+            <input type="text" id="stepTitle" placeholder="Ex : Demande de remboursement">
+        </div>
+        <div class="form-group">
+            <label for="stepDesc">Process / Description</label>
+            <textarea id="stepDesc" placeholder="Ex : Verifier la commande, contacter Adrien sur Slack..."></textarea>
+        </div>
+        <div class="form-group">
+            <label for="stepTag">Tag</label>
+            <select id="stepTag">
+                <option value="sent">✔ Traite en autonomie</option>
+                <option value="slack">⚡ Via Slack → Adrien</option>
+                <option value="evolve">🔄 Process evolutif</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeProcessModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="addStep()">Ajouter</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openProcessModal() { document.getElementById('processModal').classList.add('active'); }
+function closeProcessModal() { document.getElementById('processModal').classList.remove('active'); }
+
+function addStep() {
+    const title = document.getElementById('stepTitle').value.trim();
+    const desc = document.getElementById('stepDesc').value.trim();
+    const tag = document.getElementById('stepTag').value;
+    if (!title) return;
+
+    const grid = document.getElementById('processGrid');
+    const num = grid.children.length + 1;
+
+    const tagStyles = {
+        sent: { bg: '#e8f5e9', color: '#2e7d32', label: '✔ Traite en autonomie' },
+        slack: { bg: '#E8E0F0', color: '#6B5EA8', label: '⚡ Via Slack → Adrien' },
+        evolve: { bg: '#f5f5f7', color: '#86868b', label: '🔄 Process evolutif' },
+    };
+    const t = tagStyles[tag];
+
+    const div = document.createElement('div');
+    div.className = 'process-step';
+    div.style.cssText = 'display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border);';
+    div.innerHTML = `
+        <span style="font-size:1.5rem;color:var(--border);font-weight:700;width:30px;">${num}</span>
+        <div style="flex:1;">
+            <strong>${title}</strong>
+            ${desc ? `<p style="font-size:0.9rem;color:var(--text-secondary);margin-top:0.25rem;">${desc}</p>` : ''}
+            <span class="badge" style="background:${t.bg};color:${t.color};margin-top:0.5rem;">${t.label}</span>
+        </div>
+    `;
+    grid.appendChild(div);
+    closeProcessModal();
+    document.getElementById('stepTitle').value = '';
+    document.getElementById('stepDesc').value = '';
+}
+</script>
+{% endblock %}
