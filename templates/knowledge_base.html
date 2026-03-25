@@ -1,22 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Base de connaissances{% endblock %}
+{% block title %}Base de savoir{% endblock %}
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>Base de connaissances</h1>
-        <p>Politiques, FAQ, procedures - l'IA utilise ces infos pour repondre</p>
+        <h1>Base de savoir</h1>
+        <p>Tout ce que l'IA doit savoir : documents, formations, politiques, FAQ, notes...</p>
     </div>
-    <button class="btn btn-primary" onclick="openModal()">+ Nouvel article</button>
+    <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-ghost" onclick="openQuickDrop()">📎 Import rapide</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Ajouter</button>
+    </div>
 </div>
 
 {% if categories %}
 <div class="filters">
-    <a href="/base-connaissances" class="filter-btn {% if not filter_category %}active{% endif %}">Tout</a>
+    <a href="/base-connaissances" class="filter-btn {% if not filter_category %}active{% endif %}">Tout ({{ articles|length }})</a>
     {% for cat in categories %}
     <a href="/base-connaissances?category={{ cat }}" class="filter-btn {% if filter_category == cat %}active{% endif %}">{{ cat }}</a>
     {% endfor %}
 </div>
 {% endif %}
+
+<!-- Zone d'import rapide (drag & drop global) -->
+<div class="card" id="quickDropCard" style="display: none; margin-bottom: 1.5rem;">
+    <div id="quickDropZone" style="border: 2px dashed var(--primary); border-radius: 10px; padding: 2rem; text-align: center; background: #f0f7ff; cursor: pointer;" onclick="document.getElementById('quickFile').click()">
+        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📥</div>
+        <p style="font-size: 1rem; font-weight: 600;">Glissez-deposez vos fichiers ici</p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">PDF, TXT, CSV, PNG, JPG — le contenu sera extrait et ajoute automatiquement</p>
+    </div>
+    <input type="file" id="quickFile" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp" style="display:none;" onchange="quickUpload()" multiple>
+    <div id="quickStatus" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 0.85rem;"></div>
+</div>
 
 {% if articles %}
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem;">
@@ -40,57 +54,61 @@
             <a href="{{ article.file_url }}" target="_blank" class="badge" style="background:#e3f2fd; color:#1565c0; text-decoration:none;">📎 {{ article.file_name or 'Fichier joint' }}</a>
         </div>
         {% endif %}
-        <small style="color: var(--text-secondary);">Mis a jour : {{ article.updated_at[:10] }}</small>
+        <small style="color: var(--text-secondary);">{{ article.updated_at[:10] }}</small>
     </div>
     {% endfor %}
 </div>
 {% else %}
 <div class="card">
     <div class="empty-state">
-        <div class="icon">📚</div>
-        <p>Aucun article dans la base de connaissances</p>
-        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Ajoutez des politiques de retour, FAQ, procedures pour que l'IA puisse les utiliser</p>
-        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="openModal()">Creer le premier article</button>
+        <div class="icon">🧠</div>
+        <p>La base de savoir est vide</p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Deposez tout ce que l'IA doit connaitre : documents de formation, politiques, FAQ, notes internes, guides produits...</p>
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center;">
+            <button class="btn btn-primary" onclick="openQuickDrop()">📎 Importer des fichiers</button>
+            <button class="btn btn-ghost" onclick="openModal()">✍️ Ecrire manuellement</button>
+        </div>
     </div>
 </div>
 {% endif %}
 
-<!-- Modal -->
+<!-- Modal ajout/edition -->
 <div class="modal-overlay" id="modal">
     <div class="modal">
-        <h2 id="modalTitle">Nouvel article</h2>
+        <h2 id="modalTitle">Ajouter un savoir</h2>
         <input type="hidden" id="articleId">
-        <div class="form-group">
-            <label for="articleCategory">Categorie</label>
-            <select id="articleCategory">
-                <option value="Politique retours">Politique retours</option>
-                <option value="FAQ">FAQ</option>
-                <option value="Procedure">Procedure</option>
-                <option value="CGV">CGV</option>
-                <option value="Livraison">Livraison</option>
-                <option value="Garantie">Garantie</option>
-                <option value="Autre">Autre</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="articleTitle">Titre</label>
-            <input type="text" id="articleTitle" placeholder="Ex: Politique de retour 14 jours">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="articleCategory">Type</label>
+                <select id="articleCategory">
+                    <option value="Politique">Politique (retours, garantie...)</option>
+                    <option value="FAQ">FAQ / Reponses types</option>
+                    <option value="Formation">Formation / Guide interne</option>
+                    <option value="Produit">Fiche produit / Ingredients</option>
+                    <option value="Livraison">Livraison / Transporteurs</option>
+                    <option value="CGV">CGV / Mentions legales</option>
+                    <option value="Process">Process / Procedure interne</option>
+                    <option value="Autre">Autre</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="articleTitle">Titre / Nom du document</label>
+                <input type="text" id="articleTitle" placeholder="Ex: Guide formation nouveaux agents">
+            </div>
         </div>
         <div class="form-group">
             <label>Importer un fichier</label>
-            <div id="dropZone" style="border: 2px dashed var(--border); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;" onclick="document.getElementById('articleFile').click()">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
-                <p style="font-size: 0.9rem; color: var(--text-secondary);">Glissez-deposez un fichier ici ou cliquez pour parcourir</p>
-                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">PDF, TXT, CSV, PNG, JPG</p>
+            <div id="dropZone" style="border: 2px dashed var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;" onclick="document.getElementById('articleFile').click()">
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">📄 Glissez un fichier ici ou cliquez — PDF, TXT, CSV, images</p>
             </div>
             <input type="file" id="articleFile" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleFileUpload()">
-            <div id="fileStatus" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 8px; background: #e8f5e9; font-size: 0.85rem;"></div>
+            <div id="fileStatus" style="display: none; margin-top: 0.5rem; padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 0.85rem;"></div>
             <input type="hidden" id="fileUrl">
             <input type="hidden" id="fileName">
         </div>
         <div class="form-group">
             <label for="articleContent">Contenu</label>
-            <textarea id="articleContent" style="min-height: 200px;" placeholder="Ecrivez ici ou importez un fichier ci-dessus (le texte sera extrait automatiquement des PDF/TXT)"></textarea>
+            <textarea id="articleContent" style="min-height: 200px;" placeholder="Ecrivez ou collez du contenu ici. Si vous importez un PDF ou TXT, le texte sera extrait automatiquement."></textarea>
         </div>
         <div class="modal-actions">
             <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
@@ -102,6 +120,84 @@
 
 {% block scripts %}
 <script>
+function openQuickDrop() {
+    const card = document.getElementById('quickDropCard');
+    card.style.display = card.style.display === 'none' ? 'block' : 'none';
+}
+
+async function quickUpload() {
+    const files = document.getElementById('quickFile').files;
+    const status = document.getElementById('quickStatus');
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        status.style.display = 'block';
+        status.style.background = '#e3f2fd';
+        status.innerHTML = '⏳ Upload ' + (i+1) + '/' + files.length + ' : <strong>' + file.name + '</strong>';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            if (data.error) {
+                status.style.background = '#ffebee';
+                status.innerHTML += ' — ❌ ' + data.error;
+                continue;
+            }
+
+            // Creer automatiquement un article avec le contenu extrait
+            const title = data.original_name.replace(/\.[^/.]+$/, '');
+            const content = data.extracted_text || '(Fichier importe : ' + data.original_name + ')';
+            const category = file.name.toLowerCase().includes('faq') ? 'FAQ'
+                : file.name.toLowerCase().includes('retour') ? 'Politique'
+                : file.name.toLowerCase().includes('formation') ? 'Formation'
+                : 'Autre';
+
+            await fetch('/api/kb', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title, content, category,
+                    file_url: data.file_url, file_name: data.file_name,
+                }),
+            });
+        } catch (err) {
+            status.style.background = '#ffebee';
+            status.textContent = '❌ Erreur: ' + err.message;
+        }
+    }
+
+    status.style.background = '#e8f5e9';
+    status.innerHTML = '✅ ' + files.length + ' fichier(s) importe(s) avec succes';
+    setTimeout(() => location.reload(), 1000);
+}
+
+// Drag & drop global sur la page
+document.addEventListener('DOMContentLoaded', function() {
+    const body = document.body;
+    const quickCard = document.getElementById('quickDropCard');
+    const quickZone = document.getElementById('quickDropZone');
+
+    body.addEventListener('dragover', function(ev) { ev.preventDefault(); quickCard.style.display = 'block'; });
+    quickZone.addEventListener('dragleave', function() { /* keep visible */ });
+    quickZone.addEventListener('drop', function(ev) {
+        ev.preventDefault();
+        const dt = ev.dataTransfer;
+        document.getElementById('quickFile').files = dt.files;
+        quickUpload();
+    });
+    ['dragenter','dragover'].forEach(e => quickZone.addEventListener(e, function(ev) {
+        ev.preventDefault(); quickZone.style.background = '#e3f2fd';
+    }));
+    ['dragleave','drop'].forEach(e => quickZone.addEventListener(e, function(ev) {
+        ev.preventDefault(); quickZone.style.background = '#f0f7ff';
+    }));
+});
+
+// --- Modal ---
 function openModal() {
     document.getElementById('articleId').value = '';
     document.getElementById('articleTitle').value = '';
@@ -110,18 +206,21 @@ function openModal() {
     document.getElementById('fileName').value = '';
     document.getElementById('articleFile').value = '';
     document.getElementById('fileStatus').style.display = 'none';
-    document.getElementById('modalTitle').textContent = 'Nouvel article';
+    document.getElementById('modalTitle').textContent = 'Ajouter un savoir';
     document.getElementById('modal').classList.add('active');
 }
 
-async function uploadFile(file) {
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+async function handleFileUpload() {
+    const file = document.getElementById('articleFile').files[0];
+    if (!file) return;
     const status = document.getElementById('fileStatus');
     const dropZone = document.getElementById('dropZone');
 
     status.style.display = 'block';
     status.style.background = '#e3f2fd';
-    status.innerHTML = '⏳ Upload de <strong>' + file.name + '</strong> en cours...';
-    dropZone.style.borderColor = 'var(--primary)';
+    status.innerHTML = '⏳ Upload de <strong>' + file.name + '</strong>...';
     document.getElementById('saveBtn').disabled = true;
 
     const formData = new FormData();
@@ -131,65 +230,36 @@ async function uploadFile(file) {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
 
-        if (data.error) {
-            status.style.background = '#ffebee';
-            status.textContent = '❌ Erreur: ' + data.error;
-            return;
-        }
+        if (data.error) { status.style.background = '#ffebee'; status.textContent = '❌ ' + data.error; return; }
 
         document.getElementById('fileUrl').value = data.file_url;
         document.getElementById('fileName').value = data.file_name;
         status.style.background = '#e8f5e9';
-        status.innerHTML = '✅ <strong>' + data.original_name + '</strong> uploade avec succes';
+        status.innerHTML = '✅ <strong>' + data.original_name + '</strong>';
 
-        // Si du texte a ete extrait, pre-remplir le contenu
-        if (data.extracted_text) {
-            const current = document.getElementById('articleContent').value;
-            if (!current.trim()) {
-                document.getElementById('articleContent').value = data.extracted_text;
-            } else if (confirm('Du texte a ete extrait du fichier. Remplacer le contenu actuel ?')) {
-                document.getElementById('articleContent').value = data.extracted_text;
-            }
+        if (data.extracted_text && !document.getElementById('articleContent').value.trim()) {
+            document.getElementById('articleContent').value = data.extracted_text;
         }
-
-        // Auto-remplir le titre si vide
         if (!document.getElementById('articleTitle').value) {
             document.getElementById('articleTitle').value = data.original_name.replace(/\.[^/.]+$/, '');
         }
     } catch (err) {
-        status.style.background = '#ffebee';
-        status.textContent = '❌ Erreur: ' + err.message;
-    } finally {
-        dropZone.style.borderColor = '';
-        document.getElementById('saveBtn').disabled = false;
-    }
+        status.style.background = '#ffebee'; status.textContent = '❌ ' + err.message;
+    } finally { document.getElementById('saveBtn').disabled = false; }
 }
 
-async function handleFileUpload() {
-    const file = document.getElementById('articleFile').files[0];
-    if (file) uploadFile(file);
-}
-
-// Drag & drop
+// Modal drag & drop
 document.addEventListener('DOMContentLoaded', function() {
     const dz = document.getElementById('dropZone');
     if (!dz) return;
-    ['dragenter','dragover'].forEach(e => dz.addEventListener(e, function(ev) {
-        ev.preventDefault(); dz.style.borderColor = 'var(--primary)'; dz.style.background = '#f0f7ff';
-    }));
-    ['dragleave','drop'].forEach(e => dz.addEventListener(e, function(ev) {
-        ev.preventDefault(); dz.style.borderColor = ''; dz.style.background = '#fafafa';
-    }));
+    ['dragenter','dragover'].forEach(e => dz.addEventListener(e, function(ev) { ev.preventDefault(); dz.style.borderColor = 'var(--primary)'; dz.style.background = '#f0f7ff'; }));
+    ['dragleave','drop'].forEach(e => dz.addEventListener(e, function(ev) { ev.preventDefault(); dz.style.borderColor = ''; dz.style.background = '#fafafa'; }));
     dz.addEventListener('drop', function(ev) {
         ev.preventDefault();
         const file = ev.dataTransfer.files[0];
-        if (file) uploadFile(file);
+        if (file) { document.getElementById('articleFile').files = ev.dataTransfer.files; handleFileUpload(); }
     });
 });
-
-function closeModal() {
-    document.getElementById('modal').classList.remove('active');
-}
 
 async function editArticle(id) {
     const res = await fetch(`/api/kb/${id}`);
@@ -198,7 +268,7 @@ async function editArticle(id) {
     document.getElementById('articleCategory').value = article.category;
     document.getElementById('articleTitle').value = article.title;
     document.getElementById('articleContent').value = article.content;
-    document.getElementById('modalTitle').textContent = 'Modifier l\'article';
+    document.getElementById('modalTitle').textContent = 'Modifier';
     document.getElementById('modal').classList.add('active');
 }
 
@@ -213,16 +283,12 @@ async function saveArticle() {
     };
     if (!data.title || !data.content) { alert('Titre et contenu requis'); return; }
     if (id) data.id = parseInt(id);
-
-    await fetch('/api/kb', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
+    await fetch('/api/kb', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
     location.reload();
 }
 
 async function deleteArticle(id) {
-    if (!confirm('Supprimer cet article ?')) return;
+    if (!confirm('Supprimer ce document ?')) return;
     await fetch(`/api/kb/${id}`, { method: 'DELETE' });
     location.reload();
 }
