@@ -77,9 +77,14 @@
             <input type="text" id="articleTitle" placeholder="Ex: Politique de retour 14 jours">
         </div>
         <div class="form-group">
-            <label for="articleFile">Joindre un fichier (PDF, TXT, CSV, image)</label>
-            <input type="file" id="articleFile" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" style="padding: 0.5rem; border: 1px dashed var(--border); border-radius: 8px; width: 100%;" onchange="handleFileUpload()">
-            <small id="fileStatus" style="color: var(--text-secondary); display: none; margin-top: 0.4rem;"></small>
+            <label>Importer un fichier</label>
+            <div id="dropZone" style="border: 2px dashed var(--border); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;" onclick="document.getElementById('articleFile').click()">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">Glissez-deposez un fichier ici ou cliquez pour parcourir</p>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">PDF, TXT, CSV, PNG, JPG</p>
+            </div>
+            <input type="file" id="articleFile" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleFileUpload()">
+            <div id="fileStatus" style="display: none; margin-top: 0.75rem; padding: 0.6rem 0.85rem; border-radius: 8px; background: #e8f5e9; font-size: 0.85rem;"></div>
             <input type="hidden" id="fileUrl">
             <input type="hidden" id="fileName">
         </div>
@@ -109,14 +114,14 @@ function openModal() {
     document.getElementById('modal').classList.add('active');
 }
 
-async function handleFileUpload() {
-    const fileInput = document.getElementById('articleFile');
+async function uploadFile(file) {
     const status = document.getElementById('fileStatus');
-    const file = fileInput.files[0];
-    if (!file) return;
+    const dropZone = document.getElementById('dropZone');
 
     status.style.display = 'block';
-    status.textContent = 'Upload en cours...';
+    status.style.background = '#e3f2fd';
+    status.innerHTML = '⏳ Upload de <strong>' + file.name + '</strong> en cours...';
+    dropZone.style.borderColor = 'var(--primary)';
     document.getElementById('saveBtn').disabled = true;
 
     const formData = new FormData();
@@ -127,13 +132,15 @@ async function handleFileUpload() {
         const data = await res.json();
 
         if (data.error) {
-            status.textContent = 'Erreur: ' + data.error;
+            status.style.background = '#ffebee';
+            status.textContent = '❌ Erreur: ' + data.error;
             return;
         }
 
         document.getElementById('fileUrl').value = data.file_url;
         document.getElementById('fileName').value = data.file_name;
-        status.textContent = '✓ Fichier uploade: ' + data.original_name;
+        status.style.background = '#e8f5e9';
+        status.innerHTML = '✅ <strong>' + data.original_name + '</strong> uploade avec succes';
 
         // Si du texte a ete extrait, pre-remplir le contenu
         if (data.extracted_text) {
@@ -150,11 +157,35 @@ async function handleFileUpload() {
             document.getElementById('articleTitle').value = data.original_name.replace(/\.[^/.]+$/, '');
         }
     } catch (err) {
-        status.textContent = 'Erreur upload: ' + err.message;
+        status.style.background = '#ffebee';
+        status.textContent = '❌ Erreur: ' + err.message;
     } finally {
+        dropZone.style.borderColor = '';
         document.getElementById('saveBtn').disabled = false;
     }
 }
+
+async function handleFileUpload() {
+    const file = document.getElementById('articleFile').files[0];
+    if (file) uploadFile(file);
+}
+
+// Drag & drop
+document.addEventListener('DOMContentLoaded', function() {
+    const dz = document.getElementById('dropZone');
+    if (!dz) return;
+    ['dragenter','dragover'].forEach(e => dz.addEventListener(e, function(ev) {
+        ev.preventDefault(); dz.style.borderColor = 'var(--primary)'; dz.style.background = '#f0f7ff';
+    }));
+    ['dragleave','drop'].forEach(e => dz.addEventListener(e, function(ev) {
+        ev.preventDefault(); dz.style.borderColor = ''; dz.style.background = '#fafafa';
+    }));
+    dz.addEventListener('drop', function(ev) {
+        ev.preventDefault();
+        const file = ev.dataTransfer.files[0];
+        if (file) uploadFile(file);
+    });
+});
 
 function closeModal() {
     document.getElementById('modal').classList.remove('active');

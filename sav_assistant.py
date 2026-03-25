@@ -40,7 +40,7 @@ def build_system_prompt():
     return system
 
 
-def generate_response(customer_message, channel="email", context="", customer_name="", customer_email=""):
+def generate_response(customer_message, channel="email", context="", customer_name="", customer_email="", tone="professionnel"):
     """Genere une reponse SAV via l'API Claude."""
     client = anthropic.Anthropic()
     system_prompt = build_system_prompt()

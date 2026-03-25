@@ -134,7 +134,7 @@ def api_generate():
             channel=channel,
             context=data.get("context", ""),
             customer_name=data.get("customer_name", ""),
-            customer_email=data.get("customer_email", ""),
+            tone=data.get("tone", "professionnel"),
         )
         save_conversation(
             customer_name=data.get("customer_name", ""),
