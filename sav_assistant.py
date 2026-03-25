@@ -64,7 +64,7 @@ REGLE ABSOLUE DE FORMAT DE SORTIE :
 - Pas de "Note:", pas de "Categorie detectee:", pas de "Langue:", pas d'emoji d'analyse.
 - Pas de bloc markdown de type "> Note" ou "> Categorie".
 - La reponse doit pouvoir etre copiee-collee telle quelle et envoyee directement au client.
-- Si c'est un email : commence par "Objet :" puis la reponse complete avec signature.
+- Si c'est un email : commence directement par "Bonjour [prenom]," (on repond a un message, pas besoin d'objet). Termine avec la signature.
 - Si c'est un Instagram DM/commentaire : commence directement par le message.
 - Si des informations manquent pour repondre correctement, redige quand meme une reponse
   qui demande poliment ces informations AU CLIENT (pas a l'operateur).
@@ -84,7 +84,7 @@ def generate_response(customer_message, channel="email", context="", customer_na
     }
 
     channel_instruction = {
-        "email": "Redige la reponse EMAIL complete. Commence par 'Objet : ...' puis le corps de l'email avec signature a la fin.",
+        "email": "Redige la reponse EMAIL directement (on repond a un message recu, pas de ligne Objet). Commence par 'Bonjour [prenom],' et termine avec la signature.",
         "instagram_dm": "Redige le message Instagram DM directement. Court, chaleureux, 3-5 lignes max. Pas de signature.",
         "instagram_comment": "Redige le commentaire Instagram directement. 2-3 lignes max. Jamais d'infos sensibles. Redirige en DM si besoin.",
     }

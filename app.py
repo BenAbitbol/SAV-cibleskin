@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
 from database import (
+    analyze_image,
     delete_conversation,
     delete_kb_article,
     delete_product,
@@ -199,12 +200,23 @@ def api_upload_file():
     try:
         file_url, storage_path = upload_file(file_bytes, f.filename, content_type)
 
-        # Extraire le texte si c'est un PDF ou fichier texte
+        # Extraire le texte selon le type de fichier
         extracted_text = ""
-        if f.filename.lower().endswith(".pdf"):
+        lower_name = f.filename.lower()
+        if lower_name.endswith(".pdf"):
             extracted_text = extract_text_from_pdf(file_bytes)
-        elif f.filename.lower().endswith((".txt", ".md", ".csv")):
+        elif lower_name.endswith((".txt", ".md", ".csv")):
             extracted_text = file_bytes.decode("utf-8", errors="replace")
+        elif lower_name.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")):
+            # Analyse d'image par Claude Vision
+            media_types = {
+                ".png": "image/png", ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg", ".webp": "image/webp",
+                ".gif": "image/gif",
+            }
+            ext = "." + lower_name.rsplit(".", 1)[-1]
+            media_type = media_types.get(ext, "image/png")
+            extracted_text = analyze_image(file_bytes, f.filename, media_type)
 
         return jsonify({
             "file_url": file_url,

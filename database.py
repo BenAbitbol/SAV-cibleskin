@@ -196,6 +196,50 @@ def extract_text_from_pdf(file_bytes):
         return f"(Erreur extraction PDF: {e})"
 
 
+def analyze_image(file_bytes, file_name, media_type="image/png"):
+    """Analyse une image avec Claude Vision et retourne un resume textuel."""
+    import base64
+    import anthropic
+
+    b64 = base64.standard_b64encode(file_bytes).decode("utf-8")
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=2048,
+        messages=[{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": media_type,
+                        "data": b64,
+                    },
+                },
+                {
+                    "type": "text",
+                    "text": (
+                        "Analyse cette image en detail pour alimenter une base de savoir "
+                        "d'un service client (SAV) de la marque CibleSkin (soins de peau). "
+                        "Extrais et decris :\n"
+                        "- Tout texte visible (ingredients, instructions, prix, etc.)\n"
+                        "- Le type de document ou visuel (packaging, brochure, capture ecran, photo produit, etc.)\n"
+                        "- Les informations cles utiles pour repondre aux clients\n\n"
+                        "Reponds en francais, de maniere structuree et exhaustive."
+                    ),
+                },
+            ],
+        }],
+    )
+
+    for block in response.content:
+        if block.type == "text":
+            return block.text
+    return "(Aucune analyse disponible)"
+
+
 # --- Stats ---
 
 def get_stats():
