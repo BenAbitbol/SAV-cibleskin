@@ -83,14 +83,13 @@ def generate_response(
         ),
     }
 
-    user_content = f"""Canal : {channel.upper()}
-
-{f"Contexte supplementaire : {context}" if context else ""}
-
-Message client :
-\"\"\"
-{customer_message}
-\"\"\"""
+    context_line = f"Contexte supplementaire : {context}\n" if context else ""
+    user_content = (
+        f"Canal : {channel.upper()}\n\n"
+        f"{context_line}\n"
+        f"Message client :\n"
+        f"---\n{customer_message}\n---"
+    )
 
     instruction = channel_instruction.get(channel, channel_instruction["email"])
     user_content += f"\n\nInstruction : {instruction}"
