@@ -57,8 +57,13 @@ def handle_404(e):
 
 @app.route("/")
 def index():
-    stats = get_stats()
-    recent = get_conversations(limit=5)
+    try:
+        stats = get_stats()
+        recent = get_conversations(limit=5)
+    except Exception as e:
+        stats = {"total_conversations": 0, "by_channel": {}, "by_status": {}, "by_category": {},
+                 "total_products": 0, "total_kb_articles": 0, "error": str(e)}
+        recent = []
     return render_template("dashboard.html", stats=stats, recent=recent, page="dashboard")
 
 
@@ -88,8 +93,13 @@ def conversation_detail(conv_id):
 @app.route("/base-connaissances")
 def knowledge_base():
     category = request.args.get("category")
-    articles = get_kb_articles(category=category)
-    categories = sorted(set(a["category"] for a in get_kb_articles()))
+    try:
+        articles = get_kb_articles(category=category)
+        categories = sorted(set(a["category"] for a in get_kb_articles()))
+    except Exception as e:
+        articles = []
+        categories = []
+        app.logger.error(f"Erreur KB: {e}")
     return render_template("knowledge_base.html", articles=articles, categories=categories,
                            page="kb", filter_category=category)
 

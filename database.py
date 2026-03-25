@@ -169,10 +169,13 @@ def delete_template(template_id):
 def upload_file(file_bytes, file_name, content_type="application/octet-stream"):
     """Upload un fichier dans Supabase Storage. Retourne l'URL publique."""
     sb = get_supabase()
-    # Ajouter un timestamp pour eviter les collisions
     import time
     storage_path = f"{int(time.time())}_{file_name}"
-    sb.storage.from_("files").upload(storage_path, file_bytes, {"content-type": content_type})
+    sb.storage.from_("files").upload(
+        path=storage_path,
+        file=file_bytes,
+        file_options={"content-type": content_type},
+    )
     url = sb.storage.from_("files").get_public_url(storage_path)
     return url, storage_path
 
