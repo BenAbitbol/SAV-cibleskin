@@ -36,9 +36,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Init DB au demarrage
-with app.app_context():
-    init_db()
+# Init DB en lazy (pas au demarrage pour eviter le timeout Render)
 
 
 @app.errorhandler(500)
@@ -272,10 +270,21 @@ def api_stats():
 @app.route("/api/health")
 def api_health():
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    sb_url = os.environ.get("SUPABASE_URL", "")
+    sb_key = os.environ.get("SUPABASE_KEY", "")
+    sb_ok = False
+    if sb_url and sb_key:
+        try:
+            from database import get_supabase
+            get_supabase().table("settings").select("key").limit(1).execute()
+            sb_ok = True
+        except Exception:
+            pass
     return jsonify({
         "status": "ok",
         "api_key_configured": bool(api_key),
-        "api_key_preview": f"{api_key[:12]}...{api_key[-4:]}" if len(api_key) > 16 else "non definie",
+        "supabase_configured": bool(sb_url and sb_key),
+        "supabase_connected": sb_ok,
     })
 
 
