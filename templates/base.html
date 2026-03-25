@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SAV Assistant{% endblock %} - CibleSkin</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f5f5f7; --card: #ffffff; --border: #e5e5e7;
+            --text: #1d1d1f; --text-secondary: #86868b; --primary: #0071e3;
+            --primary-hover: #0062c4; --success: #34c759; --warning: #ff9500;
+            --danger: #ff3b30; --sidebar-bg: #1d1d1f; --sidebar-text: #f5f5f7;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 240px; background: var(--sidebar-bg); color: var(--sidebar-text); padding: 1.5rem 0; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 100; }
+        .sidebar-brand { padding: 0 1.5rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 1rem; }
+        .sidebar-brand h2 { font-size: 1.2rem; font-weight: 700; }
+        .sidebar-brand small { color: rgba(255,255,255,0.5); font-size: 0.8rem; }
+        .sidebar nav a { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1.5rem; color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.9rem; transition: all 0.2s; }
+        .sidebar nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+        .sidebar nav a.active { background: rgba(255,255,255,0.12); color: white; font-weight: 600; border-left: 3px solid var(--primary); }
+        .sidebar nav a .icon { width: 20px; text-align: center; font-size: 1.1rem; }
+        .sidebar .section-label { padding: 1rem 1.5rem 0.5rem; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.35); }
+
+        /* Main */
+        .main { margin-left: 240px; flex: 1; padding: 2rem; max-width: 1200px; }
+        .page-header { margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .page-header h1 { font-size: 1.6rem; }
+        .page-header p { color: var(--text-secondary); margin-top: 0.25rem; }
+
+        /* Cards */
+        .card { background: var(--card); border-radius: 12px; padding: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--border); margin-bottom: 1.5rem; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .card-header h3 { font-size: 1rem; }
+
+        /* Stats grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card); border-radius: 12px; padding: 1.25rem; border: 1px solid var(--border); }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; }
+        .stat-card .stat-label { color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem; }
+
+        /* Forms */
+        label { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.85rem; }
+        input[type="text"], input[type="email"], input[type="number"], select, textarea {
+            width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.9rem; font-family: inherit; background: white; transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); }
+        textarea { resize: vertical; min-height: 100px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+        .form-group { margin-bottom: 1rem; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; text-decoration: none; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: var(--bg); }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Badges */
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+        .badge-email { background: #e8f5e9; color: #2e7d32; }
+        .badge-dm { background: #fce4ec; color: #c62828; }
+        .badge-comment { background: #fff3e0; color: #e65100; }
+        .badge-draft { background: #e3f2fd; color: #1565c0; }
+        .badge-sent { background: #e8f5e9; color: #2e7d32; }
+        .badge-archived { background: #f5f5f5; color: #757575; }
+
+        /* Table */
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        .table th { font-weight: 600; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+        .table tr:hover td { background: rgba(0,113,227,0.03); }
+        .table .truncate { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Channel selector */
+        .channel-selector { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .channel-btn { flex: 1; padding: 0.65rem; border: 2px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-size: 0.85rem; text-align: center; transition: all 0.2s; font-weight: 500; }
+        .channel-btn.active { border-color: var(--primary); background: #f0f7ff; color: var(--primary); font-weight: 600; }
+        .channel-btn:hover { border-color: var(--primary); }
+
+        /* Response box */
+        .response-box { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.6; }
+
+        /* Loading */
+        .loading { text-align: center; color: var(--text-secondary); padding: 2rem; }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-left: 0.5rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; padding: 2rem; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; }
+        .modal h2 { margin-bottom: 1.5rem; font-size: 1.2rem; }
+        .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+        /* Filters */
+        .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .filter-btn { padding: 0.4rem 0.8rem; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 0.8rem; cursor: pointer; text-decoration: none; color: var(--text); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Empty state */
+        .empty-state { text-align: center; padding: 3rem; color: var(--text-secondary); }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar-brand h2, .sidebar-brand small, .sidebar nav a span, .sidebar .section-label { display: none; }
+            .sidebar nav a { justify-content: center; padding: 0.75rem; }
+            .main { margin-left: 60px; padding: 1rem; }
+            .form-row { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <h2>CibleSkin</h2>
+            <small>SAV Assistant IA</small>
+        </div>
+        <nav>
+            <a href="/" class="{% if page == 'dashboard' %}active{% endif %}">
+                <span class="icon">📊</span><span>Tableau de bord</span>
+            </a>
+            <a href="/assistant" class="{% if page == 'assistant' %}active{% endif %}">
+                <span class="icon">🤖</span><span>Assistant SAV</span>
+            </a>
+            <a href="/historique" class="{% if page == 'historique' %}active{% endif %}">
+                <span class="icon">📋</span><span>Historique</span>
+            </a>
+            <div class="section-label">Donnees</div>
+            <a href="/base-connaissances" class="{% if page == 'kb' %}active{% endif %}">
+                <span class="icon">📚</span><span>Base de connaissances</span>
+            </a>
+            <a href="/produits" class="{% if page == 'products' %}active{% endif %}">
+                <span class="icon">🛍️</span><span>Produits</span>
+            </a>
+            <div class="section-label">Config</div>
+            <a href="/parametres" class="{% if page == 'settings' %}active{% endif %}">
+                <span class="icon">⚙️</span><span>Parametres</span>
+            </a>
+        </nav>
+    </aside>
+    <main class="main">
+        {% block content %}{% endblock %}
+    </main>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

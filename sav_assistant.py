@@ -1,77 +1,55 @@
 """SAV Assistant CibleSkin - Moteur IA avec l'API Claude."""
 
-import os
 from pathlib import Path
 
 import anthropic
 
-DATA_DIR = Path(__file__).parent / "data"
-DRAFTS_DIR = Path(__file__).parent / "drafts"
+from database import get_kb_articles, get_products, get_setting
 
 
-def load_reference_data() -> str:
-    """Charge tous les fichiers de reference du dossier /data/."""
-    parts = []
-    if not DATA_DIR.exists():
-        return ""
-
-    for filepath in sorted(DATA_DIR.iterdir()):
-        if filepath.name.startswith("."):
-            continue
-        if filepath.suffix in (".txt", ".md", ".csv"):
-            try:
-                content = filepath.read_text(encoding="utf-8")
-                parts.append(f"--- {filepath.name} ---\n{content}")
-            except Exception:
-                parts.append(f"--- {filepath.name} --- (erreur de lecture)")
-
-    return "\n\n".join(parts)
-
-
-def load_signature() -> str:
-    """Charge la signature email depuis /data/signature.txt."""
-    sig_path = DATA_DIR / "signature.txt"
-    if sig_path.exists():
-        return sig_path.read_text(encoding="utf-8").strip()
-    return ""
-
-
-def build_system_prompt() -> str:
-    """Construit le system prompt avec les donnees de reference."""
+def build_system_prompt():
+    """Construit le system prompt avec les donnees de reference depuis la DB."""
     instructions = Path(__file__).parent / "CLAUDE.md"
     system = instructions.read_text(encoding="utf-8")
 
-    ref_data = load_reference_data()
-    signature = load_signature()
-
-    system += "\n\n---\n\n## DONNEES DE REFERENCE CHARGEES\n\n"
-    if ref_data:
-        system += ref_data
+    # Charger les articles de la base de connaissances
+    articles = get_kb_articles()
+    if articles:
+        system += "\n\n---\n\n## DONNEES DE REFERENCE (Base de connaissances)\n\n"
+        for art in articles:
+            system += f"### [{art['category']}] {art['title']}\n{art['content']}\n\n"
     else:
-        system += "(Aucun fichier de reference trouve dans /data/)"
+        system += "\n\n---\n\n## DONNEES DE REFERENCE\n\n(Aucun article dans la base de connaissances)\n"
 
-    system += f"\n\n## SIGNATURE EMAIL ACTUELLE\n\n{signature}"
+    # Charger les produits
+    products = get_products()
+    if products:
+        system += "\n## CATALOGUE PRODUITS\n\n"
+        for p in products:
+            stock = "En stock" if p["in_stock"] else "Rupture"
+            price_str = f"{p['price']:.2f} EUR" if p["price"] else "Prix non defini"
+            system += f"- **{p['name']}** (SKU: {p['sku'] or 'N/A'}) - {price_str} - {stock}\n"
+            if p["description"]:
+                system += f"  {p['description']}\n"
+
+    # Charger la signature
+    signature = get_setting("signature", "")
+    if signature:
+        system += f"\n\n## SIGNATURE EMAIL ACTUELLE\n\n{signature}"
 
     return system
 
 
-def generate_response(
-    customer_message: str,
-    channel: str = "email",
-    context: str = "",
-) -> str:
-    """Genere une reponse SAV via l'API Claude.
-
-    Args:
-        customer_message: Le message du client.
-        channel: "email", "instagram_dm" ou "instagram_comment".
-        context: Contexte supplementaire (historique, infos commande...).
-
-    Returns:
-        La reponse generee par Claude.
-    """
+def generate_response(customer_message, channel="email", context="", customer_name="", customer_email=""):
+    """Genere une reponse SAV via l'API Claude."""
     client = anthropic.Anthropic()
     system_prompt = build_system_prompt()
+
+    channel_labels = {
+        "email": "EMAIL",
+        "instagram_dm": "INSTAGRAM DM",
+        "instagram_comment": "INSTAGRAM COMMENTAIRE PUBLIC",
+    }
 
     channel_instruction = {
         "email": "Genere une reponse EMAIL complete avec objet. Utilise la signature.",
@@ -83,16 +61,18 @@ def generate_response(
         ),
     }
 
-    context_line = f"Contexte supplementaire : {context}\n" if context else ""
-    user_content = (
-        f"Canal : {channel.upper()}\n\n"
-        f"{context_line}\n"
-        f"Message client :\n"
-        f"---\n{customer_message}\n---"
-    )
-
+    parts = [f"Canal : {channel_labels.get(channel, 'EMAIL')}"]
+    if customer_name:
+        parts.append(f"Nom du client : {customer_name}")
+    if customer_email:
+        parts.append(f"Email du client : {customer_email}")
+    if context:
+        parts.append(f"Contexte supplementaire : {context}")
+    parts.append(f"\nMessage client :\n---\n{customer_message}\n---")
     instruction = channel_instruction.get(channel, channel_instruction["email"])
-    user_content += f"\n\nInstruction : {instruction}"
+    parts.append(f"\nInstruction : {instruction}")
+
+    user_content = "\n".join(parts)
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -108,22 +88,3 @@ def generate_response(
             result_parts.append(block.text)
 
     return "\n".join(result_parts)
-
-
-def save_draft(response_text: str, channel: str, customer_message: str) -> Path:
-    """Sauvegarde un brouillon de reponse dans /drafts/."""
-    DRAFTS_DIR.mkdir(exist_ok=True)
-    from datetime import datetime
-
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{channel}_{timestamp}.txt"
-    filepath = DRAFTS_DIR / filename
-
-    content = f"Canal: {channel}\n"
-    content += f"Date: {datetime.now().isoformat()}\n"
-    content += f"Message client:\n{customer_message}\n"
-    content += f"\n{'=' * 50}\nReponse generee:\n{'=' * 50}\n\n"
-    content += response_text
-
-    filepath.write_text(content, encoding="utf-8")
-    return filepath

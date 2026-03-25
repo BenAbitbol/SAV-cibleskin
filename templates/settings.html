@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Parametres{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Parametres</h1>
+        <p>Configuration de la signature et des infos de la marque</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Informations de la marque</h3>
+            <div class="form-group">
+                <label for="brand_name">Nom de la marque</label>
+                <input type="text" id="brand_name" value="{{ brand_name }}">
+            </div>
+            <div class="form-group">
+                <label for="sav_email">Email SAV</label>
+                <input type="email" id="sav_email" value="{{ sav_email }}" placeholder="sav@cibleskin.com">
+            </div>
+            <div class="form-group">
+                <label for="website">Site web</label>
+                <input type="text" id="website" value="{{ website }}">
+            </div>
+            <div class="form-group">
+                <label for="instagram">Instagram</label>
+                <input type="text" id="instagram" value="{{ instagram }}" placeholder="@cibleskin">
+            </div>
+            <button class="btn btn-primary" onclick="saveBrandInfo()">Enregistrer</button>
+        </div>
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Signature email</h3>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Cette signature sera ajoutee automatiquement a la fin de chaque reponse email generee.
+            </p>
+            <div class="form-group">
+                <textarea id="signature" style="min-height: 150px; font-family: monospace;">{{ signature }}</textarea>
+            </div>
+            <button class="btn btn-primary" onclick="saveSignature()">Enregistrer la signature</button>
+            <button class="btn btn-ghost" style="margin-left: 0.5rem;" onclick="generateSignature()">Auto-generer</button>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Apercu signature</h3>
+            <div class="response-box" id="signaturePreview" style="white-space: pre-wrap;">{{ signature or '(Aucune signature definie)' }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function saveBrandInfo() {
+    const data = {
+        brand_name: document.getElementById('brand_name').value,
+        sav_email: document.getElementById('sav_email').value,
+        website: document.getElementById('website').value,
+        instagram: document.getElementById('instagram').value,
+    };
+    await fetch('/api/settings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    alert('Informations enregistrees !');
+}
+
+async function saveSignature() {
+    await fetch('/api/settings', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signature: document.getElementById('signature').value }),
+    });
+    document.getElementById('signaturePreview').textContent = document.getElementById('signature').value;
+    alert('Signature enregistree !');
+}
+
+function generateSignature() {
+    const name = document.getElementById('brand_name').value || 'CibleSkin';
+    const email = document.getElementById('sav_email').value || 'sav@cibleskin.com';
+    const web = document.getElementById('website').value || 'https://www.cibleskin.com';
+    const insta = document.getElementById('instagram').value || '@cibleskin';
+
+    const sig = `Service Client — ${name}\n📧 ${email}\n🌐 ${web}\n📸 ${insta}`;
+    document.getElementById('signature').value = sig;
+    document.getElementById('signaturePreview').textContent = sig;
+}
+</script>
+{% endblock %}

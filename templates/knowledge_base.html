@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Base de connaissances{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Base de connaissances</h1>
+        <p>Politiques, FAQ, procedures - l'IA utilise ces infos pour repondre</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Nouvel article</button>
+</div>
+
+{% if categories %}
+<div class="filters">
+    <a href="/base-connaissances" class="filter-btn {% if not filter_category %}active{% endif %}">Tout</a>
+    {% for cat in categories %}
+    <a href="/base-connaissances?category={{ cat }}" class="filter-btn {% if filter_category == cat %}active{% endif %}">{{ cat }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if articles %}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem;">
+    {% for article in articles %}
+    <div class="card" style="margin-bottom: 0;">
+        <div class="card-header">
+            <div>
+                <span class="badge" style="background: #ede7f6; color: #5e35b1;">{{ article.category }}</span>
+                <h3 style="margin-top: 0.5rem;">{{ article.title }}</h3>
+            </div>
+            <div style="display: flex; gap: 0.25rem;">
+                <button class="btn btn-ghost btn-sm" onclick="editArticle({{ article.id }})">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteArticle({{ article.id }})">✕</button>
+            </div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; max-height: 120px; overflow: hidden;">
+            {{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}
+        </p>
+        <small style="color: var(--text-secondary);">Mis a jour : {{ article.updated_at[:10] }}</small>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="icon">📚</div>
+        <p>Aucun article dans la base de connaissances</p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">Ajoutez des politiques de retour, FAQ, procedures pour que l'IA puisse les utiliser</p>
+        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="openModal()">Creer le premier article</button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h2 id="modalTitle">Nouvel article</h2>
+        <input type="hidden" id="articleId">
+        <div class="form-group">
+            <label for="articleCategory">Categorie</label>
+            <select id="articleCategory">
+                <option value="Politique retours">Politique retours</option>
+                <option value="FAQ">FAQ</option>
+                <option value="Procedure">Procedure</option>
+                <option value="CGV">CGV</option>
+                <option value="Livraison">Livraison</option>
+                <option value="Garantie">Garantie</option>
+                <option value="Autre">Autre</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="articleTitle">Titre</label>
+            <input type="text" id="articleTitle" placeholder="Ex: Politique de retour 14 jours">
+        </div>
+        <div class="form-group">
+            <label for="articleContent">Contenu</label>
+            <textarea id="articleContent" style="min-height: 200px;" placeholder="Decrivez la politique, la procedure, la FAQ..."></textarea>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveArticle()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal() {
+    document.getElementById('articleId').value = '';
+    document.getElementById('articleTitle').value = '';
+    document.getElementById('articleContent').value = '';
+    document.getElementById('modalTitle').textContent = 'Nouvel article';
+    document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+}
+
+async function editArticle(id) {
+    const res = await fetch(`/api/kb/${id}`);
+    const article = await res.json();
+    document.getElementById('articleId').value = article.id;
+    document.getElementById('articleCategory').value = article.category;
+    document.getElementById('articleTitle').value = article.title;
+    document.getElementById('articleContent').value = article.content;
+    document.getElementById('modalTitle').textContent = 'Modifier l\'article';
+    document.getElementById('modal').classList.add('active');
+}
+
+async function saveArticle() {
+    const id = document.getElementById('articleId').value;
+    const data = {
+        category: document.getElementById('articleCategory').value,
+        title: document.getElementById('articleTitle').value,
+        content: document.getElementById('articleContent').value,
+    };
+    if (!data.title || !data.content) { alert('Titre et contenu requis'); return; }
+    if (id) data.id = parseInt(id);
+
+    await fetch('/api/kb', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    location.reload();
+}
+
+async function deleteArticle(id) {
+    if (!confirm('Supprimer cet article ?')) return;
+    await fetch(`/api/kb/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+</script>
+{% endblock %}

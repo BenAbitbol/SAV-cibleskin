@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Produits{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Catalogue Produits</h1>
+        <p>L'IA utilise ces infos pour repondre aux questions produit</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal()">+ Nouveau produit</button>
+</div>
+
+{% if products %}
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr><th>Produit</th><th>SKU</th><th>Prix</th><th>Categorie</th><th>Stock</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td><strong>{{ p.name }}</strong>{% if p.description %}<br><small style="color:var(--text-secondary)">{{ p.description[:60] }}</small>{% endif %}</td>
+                <td>{{ p.sku or '-' }}</td>
+                <td>{% if p.price %}{{ "%.2f"|format(p.price) }} EUR{% else %}-{% endif %}</td>
+                <td>{{ p.category or '-' }}</td>
+                <td>
+                    {% if p.in_stock %}
+                    <span class="badge badge-sent">En stock</span>
+                    {% else %}
+                    <span class="badge badge-danger" style="background:#ffebee; color:#c62828;">Rupture</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-ghost btn-sm" onclick="editProduct({{ p.id }})">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteProduct({{ p.id }})">✕</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card">
+    <div class="empty-state">
+        <div class="icon">🛍️</div>
+        <p>Aucun produit dans le catalogue</p>
+        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="openModal()">Ajouter un produit</button>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+    <div class="modal">
+        <h2 id="modalTitle">Nouveau produit</h2>
+        <input type="hidden" id="productId">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="productName">Nom *</label>
+                <input type="text" id="productName" placeholder="Ex: Serum Hydratant">
+            </div>
+            <div class="form-group">
+                <label for="productSku">SKU</label>
+                <input type="text" id="productSku" placeholder="Ex: CS-SER-001">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="productPrice">Prix (EUR)</label>
+                <input type="number" id="productPrice" step="0.01" placeholder="29.90">
+            </div>
+            <div class="form-group">
+                <label for="productCategory">Categorie</label>
+                <input type="text" id="productCategory" placeholder="Ex: Soins visage">
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="productDesc">Description</label>
+            <textarea id="productDesc" placeholder="Description du produit, ingredients, utilisation..."></textarea>
+        </div>
+        <div class="form-group">
+            <label><input type="checkbox" id="productStock" checked> En stock</label>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
+            <button class="btn btn-primary" onclick="saveProduct()">Enregistrer</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal() {
+    document.getElementById('productId').value = '';
+    document.getElementById('productName').value = '';
+    document.getElementById('productSku').value = '';
+    document.getElementById('productPrice').value = '';
+    document.getElementById('productCategory').value = '';
+    document.getElementById('productDesc').value = '';
+    document.getElementById('productStock').checked = true;
+    document.getElementById('modalTitle').textContent = 'Nouveau produit';
+    document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+async function editProduct(id) {
+    const res = await fetch(`/api/product/${id}`);
+    const p = await res.json();
+    document.getElementById('productId').value = p.id;
+    document.getElementById('productName').value = p.name;
+    document.getElementById('productSku').value = p.sku || '';
+    document.getElementById('productPrice').value = p.price || '';
+    document.getElementById('productCategory').value = p.category || '';
+    document.getElementById('productDesc').value = p.description || '';
+    document.getElementById('productStock').checked = !!p.in_stock;
+    document.getElementById('modalTitle').textContent = 'Modifier le produit';
+    document.getElementById('modal').classList.add('active');
+}
+
+async function saveProduct() {
+    const id = document.getElementById('productId').value;
+    const data = {
+        name: document.getElementById('productName').value,
+        sku: document.getElementById('productSku').value,
+        price: parseFloat(document.getElementById('productPrice').value) || 0,
+        category: document.getElementById('productCategory').value,
+        description: document.getElementById('productDesc').value,
+        in_stock: document.getElementById('productStock').checked ? 1 : 0,
+    };
+    if (!data.name) { alert('Nom requis'); return; }
+    if (id) data.id = parseInt(id);
+
+    await fetch('/api/product', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    location.reload();
+}
+
+async function deleteProduct(id) {
+    if (!confirm('Supprimer ce produit ?')) return;
+    await fetch(`/api/product/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+</script>
+{% endblock %}

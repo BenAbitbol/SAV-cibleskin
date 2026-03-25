@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Conversation #{{ conv.id }}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Conversation #{{ conv.id }}</h1>
+        <p>{{ conv.created_at }} - {{ conv.customer_name or 'Client inconnu' }}</p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-ghost" onclick="copyResponse()">📋 Copier la reponse</button>
+        <a href="/historique" class="btn btn-ghost">← Retour</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Informations</h3>
+            <table style="width: 100%;">
+                <tr><td style="padding: 0.5rem 0; color: var(--text-secondary);">Canal</td>
+                    <td><span class="badge badge-{{ 'email' if conv.channel == 'email' else ('dm' if conv.channel == 'instagram_dm' else 'comment') }}">{{ conv.channel }}</span></td></tr>
+                <tr><td style="padding: 0.5rem 0; color: var(--text-secondary);">Client</td>
+                    <td>{{ conv.customer_name or '-' }}</td></tr>
+                <tr><td style="padding: 0.5rem 0; color: var(--text-secondary);">Email</td>
+                    <td>{{ conv.customer_email or '-' }}</td></tr>
+                <tr><td style="padding: 0.5rem 0; color: var(--text-secondary);">Categorie</td>
+                    <td>{{ conv.category or 'Auto' }}</td></tr>
+                <tr><td style="padding: 0.5rem 0; color: var(--text-secondary);">Statut</td>
+                    <td><span class="badge badge-{{ conv.status }}">{{ conv.status }}</span></td></tr>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Message client</h3>
+            <div class="response-box">{{ conv.customer_message }}</div>
+        </div>
+
+        {% if conv.context %}
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Contexte</h3>
+            <div class="response-box">{{ conv.context }}</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div>
+        <div class="card">
+            <h3 style="margin-bottom: 1rem;">Reponse generee</h3>
+            <div class="response-box" id="responseText">{{ conv.ai_response }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyResponse() {
+    const text = document.getElementById('responseText').textContent;
+    navigator.clipboard.writeText(text).then(() => alert('Reponse copiee !'));
+}
+</script>
+{% endblock %}

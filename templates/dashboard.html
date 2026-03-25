@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Tableau de bord</h1>
+        <p>Vue d'ensemble du service client</p>
+    </div>
+    <a href="/assistant" class="btn btn-primary">+ Nouvelle reponse</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_conversations }}</div>
+        <div class="stat-label">Conversations totales</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.by_status.get('draft', 0) }}</div>
+        <div class="stat-label">Brouillons</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.by_status.get('sent', 0) }}</div>
+        <div class="stat-label">Envoyees</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_kb_articles }}</div>
+        <div class="stat-label">Articles KB</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ stats.total_products }}</div>
+        <div class="stat-label">Produits</div>
+    </div>
+</div>
+
+{% if stats.by_channel %}
+<div class="card">
+    <div class="card-header"><h3>Par canal</h3></div>
+    <div style="display: flex; gap: 2rem;">
+        {% for channel, count in stats.by_channel.items() %}
+        <div>
+            <span class="badge badge-{{ 'email' if channel == 'email' else ('dm' if channel == 'instagram_dm' else 'comment') }}">
+                {{ channel }}
+            </span>
+            <strong style="margin-left: 0.5rem;">{{ count }}</strong>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h3>Conversations recentes</h3>
+        <a href="/historique" class="btn btn-ghost btn-sm">Voir tout</a>
+    </div>
+    {% if recent %}
+    <table class="table">
+        <thead>
+            <tr><th>Date</th><th>Client</th><th>Canal</th><th>Message</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+            {% for c in recent %}
+            <tr style="cursor:pointer" onclick="location.href='/historique/{{ c.id }}'">
+                <td>{{ c.created_at[:16] }}</td>
+                <td>{{ c.customer_name or 'Inconnu' }}</td>
+                <td>
+                    <span class="badge badge-{{ 'email' if c.channel == 'email' else ('dm' if c.channel == 'instagram_dm' else 'comment') }}">
+                        {{ c.channel }}
+                    </span>
+                </td>
+                <td class="truncate">{{ c.customer_message[:80] }}...</td>
+                <td><span class="badge badge-{{ c.status }}">{{ c.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">💬</div>
+        <p>Aucune conversation pour le moment</p>
+        <a href="/assistant" class="btn btn-primary" style="margin-top: 1rem;">Creer votre premiere reponse</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,60 +1,215 @@
-"""SAV Assistant CibleSkin - API Web (Flask)."""
+"""SAV Assistant CibleSkin - Application web Flask."""
 
 import os
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from sav_assistant import generate_response, load_reference_data, load_signature, save_draft
+from database import (
+    delete_conversation,
+    delete_kb_article,
+    delete_product,
+    delete_template,
+    get_conversation,
+    get_conversations,
+    get_kb_article,
+    get_kb_articles,
+    get_product,
+    get_products,
+    get_setting,
+    get_stats,
+    get_templates,
+    init_db,
+    save_conversation,
+    save_kb_article,
+    save_product,
+    save_template,
+    set_setting,
+    update_conversation_status,
+)
+from sav_assistant import generate_response
 
 load_dotenv()
 
 app = Flask(__name__)
 
+# Init DB au demarrage
+with app.app_context():
+    init_db()
+
+
+# --- Pages principales ---
 
 @app.route("/")
 def index():
-    """Page d'accueil avec l'interface SAV."""
-    return render_template("index.html")
+    stats = get_stats()
+    recent = get_conversations(limit=5)
+    return render_template("dashboard.html", stats=stats, recent=recent, page="dashboard")
 
+
+@app.route("/assistant")
+def assistant():
+    templates = get_templates()
+    return render_template("assistant.html", templates=templates, page="assistant")
+
+
+@app.route("/historique")
+def historique():
+    status = request.args.get("status")
+    channel = request.args.get("channel")
+    convos = get_conversations(limit=100, status=status, channel=channel)
+    return render_template("historique.html", conversations=convos, page="historique",
+                           filter_status=status, filter_channel=channel)
+
+
+@app.route("/historique/<int:conv_id>")
+def conversation_detail(conv_id):
+    conv = get_conversation(conv_id)
+    if not conv:
+        return redirect(url_for("historique"))
+    return render_template("conversation_detail.html", conv=conv, page="historique")
+
+
+@app.route("/base-connaissances")
+def knowledge_base():
+    category = request.args.get("category")
+    articles = get_kb_articles(category=category)
+    categories = sorted(set(a["category"] for a in get_kb_articles()))
+    return render_template("knowledge_base.html", articles=articles, categories=categories,
+                           page="kb", filter_category=category)
+
+
+@app.route("/produits")
+def produits():
+    products = get_products()
+    return render_template("products.html", products=products, page="products")
+
+
+@app.route("/parametres")
+def parametres():
+    signature = get_setting("signature", "")
+    brand_name = get_setting("brand_name", "CibleSkin")
+    sav_email = get_setting("sav_email", "")
+    website = get_setting("website", "https://www.cibleskin.com")
+    instagram = get_setting("instagram", "")
+    return render_template("settings.html", page="settings",
+                           signature=signature, brand_name=brand_name,
+                           sav_email=sav_email, website=website, instagram=instagram)
+
+
+# --- API Endpoints ---
 
 @app.route("/api/generate", methods=["POST"])
 def api_generate():
-    """Endpoint API pour generer une reponse SAV."""
     data = request.get_json()
     if not data or "message" not in data:
         return jsonify({"error": "Le champ 'message' est requis."}), 400
 
-    customer_message = data["message"]
     channel = data.get("channel", "email")
-    context = data.get("context", "")
-
     if channel not in ("email", "instagram_dm", "instagram_comment"):
-        return jsonify({"error": "Canal invalide. Utilisez: email, instagram_dm, instagram_comment"}), 400
+        return jsonify({"error": "Canal invalide."}), 400
 
     try:
-        response_text = generate_response(customer_message, channel, context)
-        draft_path = save_draft(response_text, channel, customer_message)
-        return jsonify({
-            "response": response_text,
-            "channel": channel,
-            "draft_saved": str(draft_path),
-        })
+        response_text = generate_response(
+            customer_message=data["message"],
+            channel=channel,
+            context=data.get("context", ""),
+            customer_name=data.get("customer_name", ""),
+            customer_email=data.get("customer_email", ""),
+        )
+        save_conversation(
+            customer_name=data.get("customer_name", ""),
+            customer_email=data.get("customer_email", ""),
+            channel=channel,
+            category=data.get("category", ""),
+            customer_message=data["message"],
+            ai_response=response_text,
+            context=data.get("context", ""),
+        )
+        return jsonify({"response": response_text, "channel": channel})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/signature", methods=["GET"])
-def api_signature():
-    """Affiche la signature email actuelle."""
-    return jsonify({"signature": load_signature()})
+@app.route("/api/conversation/<int:conv_id>/status", methods=["POST"])
+def api_update_status(conv_id):
+    data = request.get_json()
+    update_conversation_status(conv_id, data["status"])
+    return jsonify({"ok": True})
 
 
-@app.route("/api/data", methods=["GET"])
-def api_data():
-    """Liste les fichiers de reference charges."""
-    ref = load_reference_data()
-    return jsonify({"reference_data": ref if ref else "Aucun fichier de reference."})
+@app.route("/api/conversation/<int:conv_id>", methods=["DELETE"])
+def api_delete_conversation(conv_id):
+    delete_conversation(conv_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/kb", methods=["POST"])
+def api_save_kb():
+    data = request.get_json()
+    save_kb_article(data["title"], data["content"], data["category"], data.get("id"))
+    return jsonify({"ok": True})
+
+
+@app.route("/api/kb/<int:article_id>", methods=["GET"])
+def api_get_kb(article_id):
+    article = get_kb_article(article_id)
+    return jsonify(article) if article else (jsonify({"error": "Not found"}), 404)
+
+
+@app.route("/api/kb/<int:article_id>", methods=["DELETE"])
+def api_delete_kb(article_id):
+    delete_kb_article(article_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/product", methods=["POST"])
+def api_save_product():
+    data = request.get_json()
+    save_product(
+        data["name"], data.get("sku", ""), data.get("price", 0),
+        data.get("description", ""), data.get("category", ""),
+        data.get("in_stock", 1), data.get("id"),
+    )
+    return jsonify({"ok": True})
+
+
+@app.route("/api/product/<int:product_id>", methods=["GET"])
+def api_get_product(product_id):
+    product = get_product(product_id)
+    return jsonify(product) if product else (jsonify({"error": "Not found"}), 404)
+
+
+@app.route("/api/product/<int:product_id>", methods=["DELETE"])
+def api_delete_product(product_id):
+    delete_product(product_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/settings", methods=["POST"])
+def api_save_settings():
+    data = request.get_json()
+    for key, value in data.items():
+        set_setting(key, value)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/template", methods=["POST"])
+def api_save_template():
+    data = request.get_json()
+    save_template(data["name"], data["channel"], data.get("category", ""), data["content"], data.get("id"))
+    return jsonify({"ok": True})
+
+
+@app.route("/api/template/<int:template_id>", methods=["DELETE"])
+def api_delete_template(template_id):
+    delete_template(template_id)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/stats")
+def api_stats():
+    return jsonify(get_stats())
 
 
 if __name__ == "__main__":

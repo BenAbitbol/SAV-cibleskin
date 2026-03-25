@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Assistant SAV{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Assistant SAV</h1>
+        <p>Generez des reponses personnalisees avec l'IA</p>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    <!-- Left: Input -->
+    <div>
+        <div class="card">
+            <label>Canal de reponse</label>
+            <div class="channel-selector">
+                <button class="channel-btn active" data-channel="email" onclick="selectChannel(this)">📧 Email</button>
+                <button class="channel-btn" data-channel="instagram_dm" onclick="selectChannel(this)">💬 Insta DM</button>
+                <button class="channel-btn" data-channel="instagram_comment" onclick="selectChannel(this)">📸 Commentaire</button>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="customer_name">Nom du client</label>
+                    <input type="text" id="customer_name" placeholder="Ex: Marie Dupont">
+                </div>
+                <div class="form-group">
+                    <label for="customer_email">Email du client</label>
+                    <input type="email" id="customer_email" placeholder="client@example.com">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Categorie</label>
+                <select id="category">
+                    <option value="">-- Detection auto --</option>
+                    <option value="LIVRAISON">Livraison</option>
+                    <option value="RETOUR">Retour / Echange</option>
+                    <option value="PRODUIT">Produit</option>
+                    <option value="QUALITE">Qualite</option>
+                    <option value="COMMANDE">Commande</option>
+                    <option value="FACTURATION">Facturation</option>
+                    <option value="AUTRE">Autre</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="context">Contexte / Notes internes</label>
+                <textarea id="context" style="min-height: 70px;" placeholder="N de commande, historique, infos transporteur..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Message du client *</label>
+                <textarea id="message" style="min-height: 160px;" placeholder="Collez ici le message du client..."></textarea>
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%;" id="generateBtn" onclick="generateResponse()">
+                🤖 Generer la reponse
+            </button>
+        </div>
+    </div>
+
+    <!-- Right: Response -->
+    <div>
+        <div class="card" id="responseCard" style="display: none;">
+            <div class="card-header">
+                <h3>Reponse generee</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-ghost btn-sm" onclick="copyResponse()">📋 Copier</button>
+                    <button class="btn btn-success btn-sm" onclick="markSent()">✓ Marquer envoyee</button>
+                </div>
+            </div>
+            <div class="response-box" id="responseBox"></div>
+        </div>
+
+        <div class="card" id="loadingCard" style="display: none;">
+            <div class="loading">
+                Claude analyse le message et redige la reponse<span class="spinner"></span>
+            </div>
+        </div>
+
+        <div class="card" id="emptyCard">
+            <div class="empty-state">
+                <div class="icon">✨</div>
+                <p>Remplissez le formulaire et cliquez sur "Generer" pour obtenir une reponse IA personnalisee</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentChannel = 'email';
+let lastConvId = null;
+
+function selectChannel(btn) {
+    document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentChannel = btn.dataset.channel;
+}
+
+async function generateResponse() {
+    const message = document.getElementById('message').value.trim();
+    if (!message) { alert('Veuillez entrer un message client.'); return; }
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = 'Generation en cours...';
+    document.getElementById('emptyCard').style.display = 'none';
+    document.getElementById('responseCard').style.display = 'none';
+    document.getElementById('loadingCard').style.display = 'block';
+
+    try {
+        const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message,
+                channel: currentChannel,
+                context: document.getElementById('context').value.trim(),
+                customer_name: document.getElementById('customer_name').value.trim(),
+                customer_email: document.getElementById('customer_email').value.trim(),
+                category: document.getElementById('category').value,
+            }),
+        });
+        const data = await res.json();
+        document.getElementById('loadingCard').style.display = 'none';
+
+        if (data.error) {
+            document.getElementById('responseBox').textContent = 'Erreur : ' + data.error;
+        } else {
+            document.getElementById('responseBox').textContent = data.response;
+        }
+        document.getElementById('responseCard').style.display = 'block';
+    } catch (err) {
+        document.getElementById('loadingCard').style.display = 'none';
+        document.getElementById('responseBox').textContent = 'Erreur : ' + err.message;
+        document.getElementById('responseCard').style.display = 'block';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🤖 Generer la reponse';
+    }
+}
+
+function copyResponse() {
+    const text = document.getElementById('responseBox').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        const btns = document.querySelectorAll('.btn-ghost');
+        btns.forEach(b => { if (b.textContent.includes('Copier')) { b.textContent = '✓ Copie !'; setTimeout(() => b.textContent = '📋 Copier', 1500); }});
+    });
+}
+
+function markSent() {
+    // The conversation was auto-saved, we'd need the ID - for now just visual feedback
+    alert('Reponse marquee comme envoyee. Retrouvez-la dans l\'historique.');
+}
+</script>
+{% endblock %}

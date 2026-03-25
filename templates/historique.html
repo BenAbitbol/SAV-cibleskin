@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Historique{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Historique des conversations</h1>
+        <p>{{ conversations|length }} conversation(s)</p>
+    </div>
+</div>
+
+<div class="filters">
+    <a href="/historique" class="filter-btn {% if not filter_status and not filter_channel %}active{% endif %}">Tout</a>
+    <a href="/historique?status=draft" class="filter-btn {% if filter_status == 'draft' %}active{% endif %}">Brouillons</a>
+    <a href="/historique?status=sent" class="filter-btn {% if filter_status == 'sent' %}active{% endif %}">Envoyees</a>
+    <a href="/historique?channel=email" class="filter-btn {% if filter_channel == 'email' %}active{% endif %}">📧 Email</a>
+    <a href="/historique?channel=instagram_dm" class="filter-btn {% if filter_channel == 'instagram_dm' %}active{% endif %}">💬 DM</a>
+    <a href="/historique?channel=instagram_comment" class="filter-btn {% if filter_channel == 'instagram_comment' %}active{% endif %}">📸 Commentaire</a>
+</div>
+
+<div class="card">
+    {% if conversations %}
+    <table class="table">
+        <thead>
+            <tr><th>Date</th><th>Client</th><th>Canal</th><th>Message</th><th>Statut</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for c in conversations %}
+            <tr>
+                <td>{{ c.created_at[:16] }}</td>
+                <td>{{ c.customer_name or 'Inconnu' }}</td>
+                <td>
+                    <span class="badge badge-{{ 'email' if c.channel == 'email' else ('dm' if c.channel == 'instagram_dm' else 'comment') }}">
+                        {{ c.channel.replace('instagram_', '') }}
+                    </span>
+                </td>
+                <td class="truncate">{{ c.customer_message[:60] }}</td>
+                <td>
+                    <select onchange="updateStatus({{ c.id }}, this.value)" style="padding:0.3rem; border-radius:6px; border:1px solid var(--border); font-size:0.8rem;">
+                        <option value="draft" {% if c.status == 'draft' %}selected{% endif %}>Brouillon</option>
+                        <option value="sent" {% if c.status == 'sent' %}selected{% endif %}>Envoyee</option>
+                        <option value="archived" {% if c.status == 'archived' %}selected{% endif %}>Archivee</option>
+                    </select>
+                </td>
+                <td>
+                    <a href="/historique/{{ c.id }}" class="btn btn-ghost btn-sm">Voir</a>
+                    <button class="btn btn-danger btn-sm" onclick="deleteConv({{ c.id }})">✕</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">📋</div>
+        <p>Aucune conversation trouvee</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateStatus(id, status) {
+    await fetch(`/api/conversation/${id}/status`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+    });
+}
+
+async function deleteConv(id) {
+    if (!confirm('Supprimer cette conversation ?')) return;
+    await fetch(`/api/conversation/${id}`, { method: 'DELETE' });
+    location.reload();
+}
+</script>
+{% endblock %}
