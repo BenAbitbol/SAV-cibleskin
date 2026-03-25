@@ -68,6 +68,11 @@ REGLE ABSOLUE DE FORMAT DE SORTIE :
 - Si c'est un Instagram DM/commentaire : commence directement par le message.
 - Si des informations manquent pour repondre correctement, redige quand meme une reponse
   qui demande poliment ces informations AU CLIENT (pas a l'operateur).
+
+REGLES DE FORMATAGE STRICTES :
+- NE JAMAIS ajouter d'accents sur les prenoms. Ecrire le prenom EXACTEMENT comme il est fourni (ex: "Emilie" reste "Emilie", pas "Émilie").
+- NE JAMAIS utiliser le tiret cadratin (—) dans le corps de l'email ou du message. Le tiret cadratin est UNIQUEMENT autorise dans la signature (ex: "Fondateur — Cible Skin"). Dans le texte, utiliser une virgule, un point ou reformuler.
+- Pas de tiret long, pas de dash decoratif dans le corps du message.
 """
 
 
