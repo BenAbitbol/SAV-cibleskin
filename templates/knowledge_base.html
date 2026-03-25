@@ -35,6 +35,11 @@
         <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; max-height: 120px; overflow: hidden;">
             {{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}
         </p>
+        {% if article.file_url %}
+        <div style="margin-top: 0.5rem;">
+            <a href="{{ article.file_url }}" target="_blank" class="badge" style="background:#e3f2fd; color:#1565c0; text-decoration:none;">📎 {{ article.file_name or 'Fichier joint' }}</a>
+        </div>
+        {% endif %}
         <small style="color: var(--text-secondary);">Mis a jour : {{ article.updated_at[:10] }}</small>
     </div>
     {% endfor %}
@@ -72,12 +77,19 @@
             <input type="text" id="articleTitle" placeholder="Ex: Politique de retour 14 jours">
         </div>
         <div class="form-group">
+            <label for="articleFile">Joindre un fichier (PDF, TXT, CSV, image)</label>
+            <input type="file" id="articleFile" accept=".pdf,.txt,.md,.csv,.png,.jpg,.jpeg" style="padding: 0.5rem; border: 1px dashed var(--border); border-radius: 8px; width: 100%;" onchange="handleFileUpload()">
+            <small id="fileStatus" style="color: var(--text-secondary); display: none; margin-top: 0.4rem;"></small>
+            <input type="hidden" id="fileUrl">
+            <input type="hidden" id="fileName">
+        </div>
+        <div class="form-group">
             <label for="articleContent">Contenu</label>
-            <textarea id="articleContent" style="min-height: 200px;" placeholder="Decrivez la politique, la procedure, la FAQ..."></textarea>
+            <textarea id="articleContent" style="min-height: 200px;" placeholder="Ecrivez ici ou importez un fichier ci-dessus (le texte sera extrait automatiquement des PDF/TXT)"></textarea>
         </div>
         <div class="modal-actions">
             <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
-            <button class="btn btn-primary" onclick="saveArticle()">Enregistrer</button>
+            <button class="btn btn-primary" id="saveBtn" onclick="saveArticle()">Enregistrer</button>
         </div>
     </div>
 </div>
@@ -89,8 +101,59 @@ function openModal() {
     document.getElementById('articleId').value = '';
     document.getElementById('articleTitle').value = '';
     document.getElementById('articleContent').value = '';
+    document.getElementById('fileUrl').value = '';
+    document.getElementById('fileName').value = '';
+    document.getElementById('articleFile').value = '';
+    document.getElementById('fileStatus').style.display = 'none';
     document.getElementById('modalTitle').textContent = 'Nouvel article';
     document.getElementById('modal').classList.add('active');
+}
+
+async function handleFileUpload() {
+    const fileInput = document.getElementById('articleFile');
+    const status = document.getElementById('fileStatus');
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    status.style.display = 'block';
+    status.textContent = 'Upload en cours...';
+    document.getElementById('saveBtn').disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        if (data.error) {
+            status.textContent = 'Erreur: ' + data.error;
+            return;
+        }
+
+        document.getElementById('fileUrl').value = data.file_url;
+        document.getElementById('fileName').value = data.file_name;
+        status.textContent = '✓ Fichier uploade: ' + data.original_name;
+
+        // Si du texte a ete extrait, pre-remplir le contenu
+        if (data.extracted_text) {
+            const current = document.getElementById('articleContent').value;
+            if (!current.trim()) {
+                document.getElementById('articleContent').value = data.extracted_text;
+            } else if (confirm('Du texte a ete extrait du fichier. Remplacer le contenu actuel ?')) {
+                document.getElementById('articleContent').value = data.extracted_text;
+            }
+        }
+
+        // Auto-remplir le titre si vide
+        if (!document.getElementById('articleTitle').value) {
+            document.getElementById('articleTitle').value = data.original_name.replace(/\.[^/.]+$/, '');
+        }
+    } catch (err) {
+        status.textContent = 'Erreur upload: ' + err.message;
+    } finally {
+        document.getElementById('saveBtn').disabled = false;
+    }
 }
 
 function closeModal() {
@@ -114,6 +177,8 @@ async function saveArticle() {
         category: document.getElementById('articleCategory').value,
         title: document.getElementById('articleTitle').value,
         content: document.getElementById('articleContent').value,
+        file_url: document.getElementById('fileUrl').value || null,
+        file_name: document.getElementById('fileName').value || null,
     };
     if (!data.title || !data.content) { alert('Titre et contenu requis'); return; }
     if (id) data.id = parseInt(id);

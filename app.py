@@ -11,6 +11,7 @@ from database import (
     delete_kb_article,
     delete_product,
     delete_template,
+    extract_text_from_pdf,
     get_conversation,
     get_conversations,
     get_kb_article,
@@ -27,6 +28,7 @@ from database import (
     save_template,
     set_setting,
     update_conversation_status,
+    upload_file,
 )
 from sav_assistant import generate_response
 
@@ -168,8 +170,42 @@ def api_delete_conversation(conv_id):
 @app.route("/api/kb", methods=["POST"])
 def api_save_kb():
     data = request.get_json()
-    save_kb_article(data["title"], data["content"], data["category"], data.get("id"))
+    save_kb_article(data["title"], data["content"], data["category"], data.get("id"),
+                    data.get("file_url"), data.get("file_name"))
     return jsonify({"ok": True})
+
+
+@app.route("/api/upload", methods=["POST"])
+def api_upload_file():
+    """Upload un fichier (PDF, image, texte) et extrait le contenu si possible."""
+    if "file" not in request.files:
+        return jsonify({"error": "Aucun fichier envoye"}), 400
+
+    f = request.files["file"]
+    if not f.filename:
+        return jsonify({"error": "Nom de fichier vide"}), 400
+
+    file_bytes = f.read()
+    content_type = f.content_type or "application/octet-stream"
+
+    try:
+        file_url, storage_path = upload_file(file_bytes, f.filename, content_type)
+
+        # Extraire le texte si c'est un PDF ou fichier texte
+        extracted_text = ""
+        if f.filename.lower().endswith(".pdf"):
+            extracted_text = extract_text_from_pdf(file_bytes)
+        elif f.filename.lower().endswith((".txt", ".md", ".csv")):
+            extracted_text = file_bytes.decode("utf-8", errors="replace")
+
+        return jsonify({
+            "file_url": file_url,
+            "file_name": storage_path,
+            "extracted_text": extracted_text,
+            "original_name": f.filename,
+        })
+    except Exception as e:
+        return jsonify({"error": f"Erreur upload: {e}"}), 500
 
 
 @app.route("/api/kb/<int:article_id>", methods=["GET"])
