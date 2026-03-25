@@ -1,6 +1,7 @@
 """SAV Assistant CibleSkin - Application web Flask."""
 
 import os
+import traceback
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, url_for
@@ -36,6 +37,20 @@ app = Flask(__name__)
 # Init DB au demarrage
 with app.app_context():
     init_db()
+
+
+@app.errorhandler(500)
+def handle_500(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": f"Erreur serveur: {e}"}), 500
+    return render_template("base.html", page="error"), 500
+
+
+@app.errorhandler(404)
+def handle_404(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Endpoint introuvable"}), 404
+    return redirect(url_for("index"))
 
 
 # --- Pages principales ---
@@ -109,6 +124,10 @@ def api_generate():
     if channel not in ("email", "instagram_dm", "instagram_comment"):
         return jsonify({"error": "Canal invalide."}), 400
 
+    # Verifier que la cle API est configuree
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({"error": "Cle API Anthropic non configuree. Ajoutez ANTHROPIC_API_KEY dans les variables d'environnement."}), 500
+
     try:
         response_text = generate_response(
             customer_message=data["message"],
@@ -128,7 +147,9 @@ def api_generate():
         )
         return jsonify({"response": response_text, "channel": channel})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        error_msg = str(e)
+        app.logger.error(f"Erreur generation: {traceback.format_exc()}")
+        return jsonify({"error": error_msg}), 500
 
 
 @app.route("/api/conversation/<int:conv_id>/status", methods=["POST"])
@@ -210,6 +231,16 @@ def api_delete_template(template_id):
 @app.route("/api/stats")
 def api_stats():
     return jsonify(get_stats())
+
+
+@app.route("/api/health")
+def api_health():
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    return jsonify({
+        "status": "ok",
+        "api_key_configured": bool(api_key),
+        "api_key_preview": f"{api_key[:12]}...{api_key[-4:]}" if len(api_key) > 16 else "non definie",
+    })
 
 
 if __name__ == "__main__":
