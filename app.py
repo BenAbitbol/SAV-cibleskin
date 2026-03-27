@@ -118,13 +118,13 @@ def produits():
 
 @app.route("/parametres")
 def parametres():
-    signature = get_setting("signature", "")
-    brand_name = get_setting("brand_name", "CibleSkin")
+    agent_name = get_setting("agent_name", "Lina")
+    brand_name = get_setting("brand_name", "Cible Skin")
     sav_email = get_setting("sav_email", "")
     website = get_setting("website", "https://www.cibleskin.com")
     instagram = get_setting("instagram", "")
     return render_template("settings.html", page="settings",
-                           signature=signature, brand_name=brand_name,
+                           agent_name=agent_name, brand_name=brand_name,
                            sav_email=sav_email, website=website, instagram=instagram)
 
 

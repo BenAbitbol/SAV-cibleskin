@@ -75,11 +75,11 @@ REGLES DE FORMATAGE STRICTES :
 - Pas de tiret long, pas de dash decoratif dans le corps du message.
 
 SIGNATURE EMAIL OBLIGATOIRE :
-- Toujours signer avec un PRENOM (jamais "Service Client", jamais "L'equipe").
-- Si le prenom de l'agent n'est pas connu, signer avec "Lina".
+- Toujours signer avec un PRENOM (jamais "Service Client", jamais "L'equipe", jamais "L'equipe Cible Skin").
+- Le prenom a utiliser est indique dans la variable AGENT_NAME ci-dessous.
 - Format exact de la signature (toujours ce format, jamais de variante) :
 
-Lina
+[AGENT_NAME]
 Cible Skin - Clinical Longevity®
 🌐 www.cibleskin.com
 
@@ -104,7 +104,15 @@ def generate_response(customer_message, channel="email", context="", customer_na
     """Genere une reponse SAV via l'API Claude."""
     client = anthropic.Anthropic()
     system_prompt = build_system_prompt()
-    system_prompt += "\n\n" + OUTPUT_RULES
+
+    # Charger le prenom de l'agent depuis les parametres
+    try:
+        agent_name = get_setting("agent_name", "Lina")
+    except Exception:
+        agent_name = "Lina"
+
+    rules = OUTPUT_RULES.replace("[AGENT_NAME]", agent_name or "Lina")
+    system_prompt += "\n\n" + rules
 
     channel_labels = {
         "email": "EMAIL",
